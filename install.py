@@ -1,7 +1,7 @@
 import launch
 
 requirements=[
-    'einops >= 0.6.0',
+    'einops>=0.6.0',
     'huggingface_hub',
     'timm',
 ]
