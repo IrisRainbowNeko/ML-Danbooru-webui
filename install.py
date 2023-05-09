@@ -7,4 +7,4 @@ requirements=[
 ]
 
 for req in requirements:
-    launch.run_pip(f"install -U {req}", f"requirements for {req}")
+    launch.run_pip(f"install -U {req}")
