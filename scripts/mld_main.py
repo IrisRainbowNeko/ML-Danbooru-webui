@@ -63,7 +63,7 @@ def build_ui(infer):
             outputs=[gr_output_text, gr_tags],
         )
         gr_btn_unload.click(
-            infer.unload(),
+            infer.unload,
             inputs=[],
             outputs=[gr_info],
         )
@@ -77,7 +77,7 @@ def build_ui(infer):
             outputs=[gr_m_info],
         )
         gr_m_btn_unload.click(
-            infer.unload(),
+            infer.unload,
             inputs=[],
             outputs=[gr_m_info],
         )
