@@ -6,5 +6,7 @@ requirements=[
     'timm',
 ]
 
-for req in requirements:
-    launch.run_pip(f"install -U {req}")
+launch.run_pip(f"install -U {requirements[0]}")
+
+for req in requirements[1:]:
+    launch.run_pip(f"install {req}")
