@@ -10,6 +10,9 @@ from huggingface_hub import hf_hub_download
 from torchvision import transforms
 
 from mldanbooru.utils.factory import create_model
+from mldanbooru.ml_decoder import ml_decoder
+from modules import shared
+import gc
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -56,6 +59,34 @@ class Infer:
         model_idx = self.MODELS.index(path)
         self.model = create_model(self.MODELS_NAME[model_idx], self.num_classes, self.args_list[model_idx]).to(device)
         state = torch.load(ckpt_file, map_location='cpu')
+
+        if model_idx==1 and not ml_decoder.use_xformers and 'head.decoder.layers.0.multihead_attn.in_proj_container.q_proj.weight' in state:
+            in_proj_weight = torch.cat([state['head.decoder.layers.0.multihead_attn.in_proj_container.q_proj.weight'],
+                                        state['head.decoder.layers.0.multihead_attn.in_proj_container.k_proj.weight'],
+                                        state[
+                                            'head.decoder.layers.0.multihead_attn.in_proj_container.v_proj.weight'], ],
+                                       dim=0)
+            in_proj_bias = torch.cat([state['head.decoder.layers.0.multihead_attn.in_proj_container.q_proj.bias'],
+                                      state['head.decoder.layers.0.multihead_attn.in_proj_container.k_proj.bias'],
+                                      state['head.decoder.layers.0.multihead_attn.in_proj_container.v_proj.bias'], ],
+                                     dim=0)
+            state['head.decoder.layers.0.multihead_attn.out_proj.weight'] = state[
+                'head.decoder.layers.0.multihead_attn.proj.weight']
+            state['head.decoder.layers.0.multihead_attn.out_proj.bias'] = state[
+                'head.decoder.layers.0.multihead_attn.proj.bias']
+            state['head.decoder.layers.0.multihead_attn.in_proj_weight'] = in_proj_weight
+            state['head.decoder.layers.0.multihead_attn.in_proj_bias'] = in_proj_bias
+
+            del state['head.decoder.layers.0.multihead_attn.in_proj_container.q_proj.weight']
+            del state['head.decoder.layers.0.multihead_attn.in_proj_container.k_proj.weight']
+            del state['head.decoder.layers.0.multihead_attn.in_proj_container.v_proj.weight']
+            del state['head.decoder.layers.0.multihead_attn.in_proj_container.q_proj.bias']
+            del state['head.decoder.layers.0.multihead_attn.in_proj_container.k_proj.bias']
+            del state['head.decoder.layers.0.multihead_attn.in_proj_container.v_proj.bias']
+            del state['head.decoder.layers.0.multihead_attn.proj.weight']
+            del state['head.decoder.layers.0.multihead_attn.proj.bias']
+
+
         self.model.load_state_dict(state, strict=True)
 
     def load_class_map(self):
@@ -104,8 +135,8 @@ class Infer:
         return ', '.join([f'{cls}:{score:.2f}' if conf else cls for cls, score in cls_list]), {cls:float(score) for cls, score in cls_list}
 
     @torch.no_grad()
-    def infer_folder(self, path: str, threshold: float, image_size: int, keep_ratio: bool, model_name: str, space: bool, escape: bool,
-                     out_type: str, prog=gr.Progress()):
+    def infer_folder(self, id_task, path: str, threshold: float, image_size: int, keep_ratio: bool, model_name: str, space: bool, escape: bool,
+                     out_type: str):
         if self.last_model_name != model_name:
             self.load_model(model_name)
             self.last_model_name = model_name
@@ -114,7 +145,9 @@ class Infer:
 
         tag_dict = {}
         img_list = [os.path.join(path, x) for x in os.listdir(path) if x[x.rfind('.'):].lower() in self.IMAGE_EXTENSIONS]
-        for item in prog.tqdm(img_list):
+        shared.state.job_count = len(img_list)
+        for i, item in enumerate(img_list):
+            shared.state.job_no = i
             img = Image.open(item)
             cls_list = self.infer_(img, threshold)
             cls_list.sort(reverse=True, key=lambda x:x[1])
@@ -133,11 +166,13 @@ class Infer:
             with open(os.path.join(path, 'image_captions.json'), 'w', encoding='utf8') as f:
                 f.write(json.dumps(tag_dict, indent=2, ensure_ascii=False))
 
-        return 'finish'
+        return 'finish', ""
 
     def unload(self):
         if hasattr(self, 'model') and self.model is not None:
             self.last_model_name = None
             del self.model
+            gc.collect()
+
             return 'model unload'
         return 'no model found'

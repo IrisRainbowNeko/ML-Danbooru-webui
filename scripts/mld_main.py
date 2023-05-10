@@ -1,10 +1,13 @@
 import gradio as gr
 
 from mldanbooru.interface import Infer
+from webui import wrap_gradio_gpu_call
 from modules import script_callbacks
+from modules.ui import setup_progressbar
 
 def build_ui(infer):
     with gr.Blocks() as mld:
+        dummy_component = gr.Label(visible=False)
         with gr.Tabs():
             with gr.Tab('Tag one image'):
                 with gr.Row():
@@ -21,8 +24,9 @@ def build_ui(infer):
                             gr_escape = gr.Checkbox(value=True, label='Use Text Escape')
                             gr_conf = gr.Checkbox(value=False, label='With confidence')
 
-                        gr_btn_submit = gr.Button(value='Tagging', variant='primary')
-                        gr_btn_unload = gr.Button(value='Unload')
+                        with gr.Row():
+                            gr_btn_submit = gr.Button(value='Tagging', variant='primary')
+                            gr_btn_unload = gr.Button(value='Unload')
 
                     with gr.Column():
                         with gr.Tabs():
@@ -47,10 +51,12 @@ def build_ui(infer):
                             gr_m_escape = gr.Checkbox(value=True, label='Use Text Escape')
                             gr_m_out_type = gr.Dropdown(['txt', 'json'], value='txt', label='File type')
 
-                        gr_m_btn_submit = gr.Button(value='Tagging', variant='primary')
-                        gr_m_btn_unload = gr.Button(value='Unload')
+                        with gr.Row():
+                            gr_m_btn_submit = gr.Button(value='Tagging', variant='primary')
+                            gr_m_btn_unload = gr.Button(value='Unload')
 
                     with gr.Column():
+                        mld_progress = gr.HTML(elem_id="mld_progress", value="")
                         gr_m_info = gr.Text(value="", show_label=False)
 
         gr_btn_submit.click(
@@ -68,8 +74,10 @@ def build_ui(infer):
             outputs=[gr_info],
         )
         gr_m_btn_submit.click(
-            infer.infer_folder,
+            wrap_gradio_gpu_call(infer.infer_folder, extra_outputs=[gr.update()]),
+            _js="mld_tagging",
             inputs=[
+                dummy_component,
                 gr_m_input_dir, gr_m_threshold, gr_m_image_size,
                 gr_m_keep_ratio, gr_m_model,
                 gr_m_space, gr_m_escape, gr_m_out_type
