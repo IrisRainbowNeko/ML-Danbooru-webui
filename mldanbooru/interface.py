@@ -137,3 +137,10 @@ class Infer:
                 f.write(json.dumps(tag_dict, indent=2, ensure_ascii=False))
 
         return 'finish'
+
+    def unload(self):
+        if hasattr(self, 'model') and self.model is not None:
+            self.last_model_name = None
+            del self.model
+            return 'model unload'
+        return 'no model found'

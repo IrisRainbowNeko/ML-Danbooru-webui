@@ -22,6 +22,7 @@ def build_ui(infer):
                             gr_conf = gr.Checkbox(value=False, label='With confidence')
 
                         gr_btn_submit = gr.Button(value='Tagging', variant='primary')
+                        gr_btn_unload = gr.Button(value='Unload')
 
                     with gr.Column():
                         with gr.Tabs():
@@ -29,6 +30,7 @@ def build_ui(infer):
                                 gr_tags = gr.Label(label='Tags')
                             with gr.Tab("Exported Text"):
                                 gr_output_text = gr.TextArea(label='Exported Text', lines=10)
+                            gr_info = gr.Text(value="", show_label=False)
 
             with gr.Tab('Tag images'):
                 with gr.Row():
@@ -46,6 +48,7 @@ def build_ui(infer):
                             gr_m_out_type = gr.Dropdown(['txt', 'json'], value='txt', label='File type')
 
                         gr_m_btn_submit = gr.Button(value='Tagging', variant='primary')
+                        gr_m_btn_unload = gr.Button(value='Unload')
 
                     with gr.Column():
                         gr_m_info = gr.Text(value="", show_label=False)
@@ -59,6 +62,11 @@ def build_ui(infer):
             ],
             outputs=[gr_output_text, gr_tags],
         )
+        gr_btn_unload.click(
+            infer.unload(),
+            inputs=[],
+            outputs=[gr_info],
+        )
         gr_m_btn_submit.click(
             infer.infer_folder,
             inputs=[
@@ -66,7 +74,12 @@ def build_ui(infer):
                 gr_m_keep_ratio, gr_m_model,
                 gr_m_space, gr_m_escape, gr_m_out_type
             ],
-            outputs=[gr_m_info, ],
+            outputs=[gr_m_info],
+        )
+        gr_m_btn_unload.click(
+            infer.unload(),
+            inputs=[],
+            outputs=[gr_m_info],
         )
     return mld
 
