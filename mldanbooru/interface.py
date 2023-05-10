@@ -42,11 +42,8 @@ class Infer:
         self.ca_former_args.scale_skip = 1
 
         self.tresnet_args = Namespace()
-        self.tresnet_args.decoder_embedding = 384
+        self.tresnet_args.decoder_embedding = 1024
         self.tresnet_args.num_of_groups = 32
-        self.tresnet_args.num_head_decoder = 8
-        self.tresnet_args.num_queries = 80
-        self.tresnet_args.scale_skip = 1
 
         self.args_list = [self.ca_former_args, self.tresnet_args]
 
