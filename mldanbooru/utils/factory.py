@@ -1,6 +1,7 @@
 import logging
 
 from ..caformer import build_caformer
+from ..ml_decoder import ml_decoder
 from ..tresnet import tresnet_f, tresnet
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ def create_model(model_name, num_classes, args, frelu=True):
     """
     tres = tresnet_f if frelu else tresnet
 
-    model_params = {'num_classes': num_classes}
+    model_params = {'num_classes':num_classes}
     args.num_classes = num_classes
 
     if model_name == 'tresnet_m':
@@ -27,5 +28,9 @@ def create_model(model_name, num_classes, args, frelu=True):
         model = build_caformer('caformer_s36_384', args)
     else:
         raise NotImplementedError("model: {} not found !!".format(model_name))
+
+    if model_name.startswith('tresnet'):
+        model = ml_decoder.add_ml_decoder_head(model, num_classes=num_classes, num_of_groups=args.num_of_groups,
+                                               decoder_embedding=args.decoder_embedding)
 
     return model

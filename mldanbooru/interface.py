@@ -41,13 +41,23 @@ class Infer:
         self.ca_former_args.num_queries = 80
         self.ca_former_args.scale_skip = 1
 
+        self.tresnet_args = Namespace()
+        self.tresnet_args.decoder_embedding = 384
+        self.tresnet_args.num_of_groups = 32
+        self.tresnet_args.num_head_decoder = 8
+        self.tresnet_args.num_queries = 80
+        self.tresnet_args.scale_skip = 1
+
+        self.args_list = [self.ca_former_args, self.tresnet_args]
+
         self.last_model_name = None
 
         self.load_class_map()
 
     def load_model(self, path=DEFAULT_MODEL):
         ckpt_file = hf_hub_download(repo_id='7eu7d7/ML-Danbooru', filename=path)
-        self.model = create_model(self.MODELS_NAME[self.MODELS.index(path)], self.num_classes, self.ca_former_args).to(device)
+        model_idx = self.MODELS.index(path)
+        self.model = create_model(self.MODELS_NAME[model_idx], self.num_classes, self.args_list[model_idx]).to(device)
         state = torch.load(ckpt_file, map_location='cpu')
         self.model.load_state_dict(state, strict=True)
 
