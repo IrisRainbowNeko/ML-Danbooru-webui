@@ -6,8 +6,6 @@ requirements=[
     'timm',
 ]
 
-launch.run_pip(f"uninstall einops", "re-install einops")
-
 launch.run_pip(f"install -U {requirements[0]}", requirements[0])
 
 for req in requirements[1:]:
